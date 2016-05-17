@@ -80,6 +80,8 @@ public class SerialArduino implements SerialPortEventListener {
             output = serialPort.getOutputStream();
             serialPort.addEventListener(this);
             serialPort.notifyOnDataAvailable(true);
+            serialPort.disableReceiveTimeout();
+            serialPort.enableReceiveThreshold(1);
             connected = true;
         } catch (PortInUseException | UnsupportedCommOperationException | IOException | TooManyListenersException e) {
             System.err.println(e.toString());
