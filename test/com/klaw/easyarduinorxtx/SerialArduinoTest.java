@@ -7,6 +7,8 @@ package com.klaw.easyarduinorxtx;
 
 import com.klaw.easyarduinorxtx.event.ArduinoEvent;
 import gnu.io.SerialPortEvent;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -22,9 +24,9 @@ public class SerialArduinoTest {
     @Test
     public void testEvent() {
         System.out.println("testEvent");
-        SerialArduino instance = new SerialArduino("COM3");
-        instance.initialize();
-        instance.addArduinoEvent(new ArduinoEvent() {
+        SerialArduino arduino = new SerialArduino("COM3");
+        arduino.initialize();
+        arduino.addArduinoEvent(new ArduinoEvent() {
             @Override
             public void arduinoEvent(String eventString) {
                 System.out.println(eventString);
