@@ -2,7 +2,6 @@ package com.klaw.easyarduinorxtx;
 
 
 
-import com.klaw.easyarduinorxtx.event.ArduinoEvent;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -20,6 +19,7 @@ import java.util.TooManyListenersException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.text.JTextComponent;
+import com.klaw.easyarduinorxtx.event.ArduinoEventHandler;
 
 /**
  *
@@ -27,23 +27,29 @@ import javax.swing.text.JTextComponent;
  */
 public class SerialArduino implements SerialPortEventListener {
 
+    private static final int TIME_OUT = 2000;
+    private static final int DEFAULT_DATA_RATE = 9600;
+    
     private SerialPort serialPort;
     private final String portName;
     private BufferedReader input;
     private OutputStream output;
-
+    private int dataRate = 0;
     private boolean connected;
 
-    private static final int TIME_OUT = 2000;
-    private static final int DATA_RATE = 9600;
+    private List<ArduinoEventHandler> arduinoEvents;
     
-    private List<ArduinoEvent> arduinoEvents;
-
     public SerialArduino(String portName) {
         this.portName = portName;
         connected = false;
     }
-    
+
+    public SerialArduino(String portName,int dataRate) {
+        this.portName = portName;
+        this.dataRate = dataRate;
+        connected = false;
+    }
+
     public void initialize() {
         if(SODetector.isUnix()){
             System.setProperty("gnu.io.rxtx.SerialPorts", portName);
@@ -72,7 +78,7 @@ public class SerialArduino implements SerialPortEventListener {
             serialPort = (SerialPort) portId.open(this.getClass().getName(),
                     TIME_OUT);
 
-            serialPort.setSerialPortParams(DATA_RATE,
+            serialPort.setSerialPortParams(dataRate > 0 ? dataRate : DEFAULT_DATA_RATE,
                     SerialPort.DATABITS_8,
                     SerialPort.STOPBITS_1,
                     SerialPort.PARITY_NONE);
@@ -98,18 +104,7 @@ public class SerialArduino implements SerialPortEventListener {
             }
         }
     }
-    
-    public synchronized void send(char value) {
-        if (serialPort != null) {
-            try {
-                output.write(value);
-                output.flush();
-            } catch (IOException ex) {
-                Logger.getLogger(SerialArduino.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-    }
-    
+
     public synchronized void send(String value) {
         if (serialPort != null) {
             try {
@@ -133,14 +128,14 @@ public class SerialArduino implements SerialPortEventListener {
         }
     }
 
-    public void addArduinoEvent(ArduinoEvent event) {
+    public void addArduinoEvent(ArduinoEventHandler event) {
         if (arduinoEvents == null) {
             arduinoEvents = new ArrayList<>();
         }
         arduinoEvents.add(event);
     }
 
-    public void removeArduinoEvent(ArduinoEvent event) {
+    public void removeArduinoEvent(ArduinoEventHandler event) {
         if (arduinoEvents != null) {
             arduinoEvents.remove(event);
         }
@@ -151,7 +146,7 @@ public class SerialArduino implements SerialPortEventListener {
         if (oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
             try {
                 String inputLine = input.readLine();
-                for (ArduinoEvent event : arduinoEvents) {
+                for (ArduinoEventHandler event : arduinoEvents) {
                     event.arduinoEvent(inputLine);
                 }
             } catch (IOException ex) {
